@@ -17,7 +17,7 @@ __Authors:__ Guilherme Andrade ([`tightfloats(at)gandrade(dot)net`](mailto:tight
 
 `tightfloats` is a lossy compression algorithm for [double precision floating-point values](https://en.wikipedia.org/wiki/Double-precision_floating-point_format). Its behaviour is adjusted through three parameters:
 * `MinValue`, `MaxValue`: the range of the values (bigger range => more bits)
-* `ErrorMargin`: a value, between 0 and 1, specifying how big do we want the error margin to be (bigger errors margins => less bits)
+* `ErrorMargin`: a value, between 0 and 1, specifying how big do we want the error margin to be (bigger error margins => less bits)
 
 It can easily achieve up to **80%** compression ratios with a 1% error margin and a range encompassing 6 orders of magnitude, when comparing to regular 8-byte values.
 
