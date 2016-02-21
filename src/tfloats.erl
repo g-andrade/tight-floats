@@ -47,11 +47,11 @@
 %% ------------------------------------------------------------------
 
 -type sign() :: 0 | 1.
--type exponent() :: 0..((1 bsl ?IEEE754_DBL_EXPON_BS) - 1).
--type significand() :: 0..((1 bsl ?IEEE754_DBL_SIGNIF_BS) - 1).
+-type exponent() :: 0..16#7FF. % ((1 bsl 11) - 1).
+-type significand() :: 0..16#FFFFFFFFFFFFF. % ((1 bsl 52) - 1).
 -type sign_info() :: negative | positive | network.
 
--type error_margin() :: float(). % >= 0, < 1
+-type error_margin() :: float(). % bigger or equal to 0, less than 1
 -export_type([error_margin/0]).
 
 -type tfloat() :: <<_:1,_:_*1>>.
@@ -174,7 +174,7 @@ sign_info(MinValue, MaxValue) when MinValue > 0, MaxValue > 0 ->
 sign_bitsize(network)   -> 1;
 sign_bitsize(_SignInfo) -> 0.
 
--spec significand_bitsize(error_margin()) -> 1..?IEEE754_DBL_SIGNIF_BS.
+-spec significand_bitsize(error_margin()) -> 1..52.
 significand_bitsize(ErrorMargin) when ErrorMargin == 0 ->
     ?IEEE754_DBL_SIGNIF_BS;
 significand_bitsize(ErrorMargin) when ErrorMargin >= 0, ErrorMargin < 1 ->
@@ -183,8 +183,8 @@ significand_bitsize(ErrorMargin) when ErrorMargin >= 0, ErrorMargin < 1 ->
     max(1, min(?IEEE754_DBL_SIGNIF_BS, ?IEEE754_DBL_SIGNIF_BS - MarginBitsize)).
 
 -spec serialised_bitsize(sign_info(),
-                         ExponentBitsize :: 1..?IEEE754_DBL_EXPON_BS,
-                         SignificandBitSize :: 1..?IEEE754_DBL_SIGNIF_BS) -> pos_integer().
+                         ExponentBitsize :: 1..11,
+                         SignificandBitSize :: 1..52) -> pos_integer().
 serialised_bitsize(network, ExponentBitsize, SignificandBitSize) ->
     1 + ExponentBitsize + SignificandBitSize;
 serialised_bitsize(_, ExponentBitsize, SignificandBitSize) ->

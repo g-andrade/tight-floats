@@ -1,0 +1,45 @@
+@author Guilherme Andrade <tightfloats(at)gandrade(dot)net>
+@copyright 2016 Guilherme Andrade
+@version 1.0.0
+@title tightfloats
+@doc `tightfloats': Bandwidth-friendly IEEE 754 floating-point serialisation for Erlang
+
+<hr/>
+
+== What is it? ==
+`tightfloats' is a lossy compression algorithm for <a href="https://en.wikipedia.org/wiki/Double-precision_floating-point_format">double precision floating-point values</a>. Its behaviour is adjusted through three parameters:
+* `MinValue', `MaxValue': the range of the values (bigger range => more bits)
+* `ErrorMargin': a value, between 0 and 1, specifying how big do we want the error margin to be (bigger errors margins => less bits)
+
+It can easily achieve up to **80%** compression ratios with a 1% error margin and a range encompassing 6 orders of magnitude, when comparing to regular 8-byte values.
+
+== Show me ==
+<pre lang="erlang">
+MinValue = 0.1,     % 1.0e-1
+MaxValue = 1000000, % 1.0e6
+ErrorMargin = 0.05, % 5%
+Packer = tfloats:packer(MinValue, MaxValue, ErrorMargin),
+Unpacker = tfloats:unpacker(MinValue, MaxValue, ErrorMargin),
+
+ValueA = 3.14,
+PackedValueA = tfloats:pack(Packer, ValueA), % bit_size(PackedValue) == 10
+tfloats:unpack(Unpacker, PackedValueA),      % [3.125]
+
+ValueB = 3210,
+PackedValueB = tfloats:pack(Packer, ValueB), % bit_size(PackedValue) == 10
+tfloats:unpack(Unpacker, PackedValueB).      % [3200]
+
+ValueC = 123000,
+PackedValueC = tfloats:pack(Packer, ValueC), % bit_size(PackedValue) == 10
+tfloats:unpack(Unpacker, PackedValueC).      % [122880]
+</pre>
+
+== How does it work? ==
+It chops up the original values into sign, exponent and significand parts and, based on the packing requirements, reduces the granularity of those values.
+
+== TODO ==
+* Deal less ambiguously with mixed ranges (e.g. negative minimum value and positive maximum value.)
+* Padding for easier use.
+
+== Concerning native compilation (HiPE) ==
+Define 'COMPILE_NATIVE_TIGHTFLOATS' (e.g. "rebar compile -DCOMPILE_NATIVE_TIGHTFLOATS") for LOLSPEED™ in case that's your thing.
