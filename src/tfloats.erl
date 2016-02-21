@@ -22,9 +22,10 @@
 %% ------------------------------------------------------------------
 
 % https://en.wikipedia.org/wiki/Double-precision_floating-point_format
--define(SIGN_BITSIZE, 1).
--define(EXPONENT_BITSIZE, 11).
--define(SIGNIFICAND_BITSIZE, 52).
+%
+-define(IEEE754_DBL_SIGN_BS, 1).
+-define(IEEE754_DBL_EXPON_BS, 11).
+-define(IEEE754_DBL_SIGNIF_BS, 52).
 
 %% ------------------------------------------------------------------
 %% Record Definitions
@@ -46,10 +47,15 @@
 %% ------------------------------------------------------------------
 
 -type sign() :: 0 | 1.
--type exponent() :: 0..((1 bsl ?EXPONENT_BITSIZE) - 1).
--type significand() :: 0..((1 bsl ?SIGNIFICAND_BITSIZE) - 1).
--type error_margin() :: float(). % >= 0, < 1
+-type exponent() :: 0..((1 bsl ?IEEE754_DBL_EXPON_BS) - 1).
+-type significand() :: 0..((1 bsl ?IEEE754_DBL_SIGNIF_BS) - 1).
 -type sign_info() :: negative | positive | network.
+
+-type error_margin() :: float(). % >= 0, < 1
+-export_type([error_margin/0]).
+
+-type tfloat() :: <<_:1,_:_*1>>.
+-export_type([tfloat/0]).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -60,7 +66,7 @@
 packer(MinValue, MaxValue, ErrorMargin) ->
     new_tightfloats(MinValue, MaxValue, ErrorMargin).
 
--spec pack(Packer :: packer(), ValueOrValues :: number() | [number()]) -> bitstring().
+-spec pack(Packer :: packer(), ValueOrValues :: number() | [number()]) -> tfloat().
 pack(Packer, Values) when is_list(Values) ->
     pack_multiple(Packer, Values);
 pack(Packer, Value) ->
@@ -99,7 +105,7 @@ new_tightfloats(MinValue, MaxValue, ErrorMargin) when MaxValue > MinValue, Error
                  sign_info = SignInfo,
                  serialised_bitsize = SerialisedBitsize}.
 
--spec pack_multiple(Packer :: packer(), Values :: [number()]) -> bitstring().
+-spec pack_multiple(Packer :: packer(), Values :: [number()]) -> tfloat().
 pack_multiple(Packer, Values) ->
     lists:foldl(
       fun (Value, Acc) ->
@@ -109,7 +115,7 @@ pack_multiple(Packer, Values) ->
       <<>>,
       Values).
 
--spec pack_single(Packer :: packer(), Value :: number()) -> bitstring().
+-spec pack_single(Packer :: packer(), Value :: number()) -> tfloat().
 pack_single(Packer, Value) ->
     #tightfloats{minimum = {MinV_Exponent, MinV_Significand},
                  maximum = {MaxV_Exponent, MaxV_Significand},
@@ -132,11 +138,11 @@ pack_single(Packer, Value) ->
     end,
 
     SerialisedExponent = ProcessedExponent - MinV_Exponent,
-    SerialisedSignificand = ProcessedSignificand bsr (?SIGNIFICAND_BITSIZE - SignificandBitSize),
+    SerialisedSignificand = ProcessedSignificand bsr (?IEEE754_DBL_SIGNIF_BS - SignificandBitSize),
     SignBitsize = sign_bitsize(SignInfo),
     <<Sign:SignBitsize, SerialisedExponent:ExponentBitsize, SerialisedSignificand:SignificandBitSize>>.
 
--spec unpack_single(Unpacker :: unpacker(), PackedValue :: bitstring()) -> float().
+-spec unpack_single(Unpacker :: unpacker(), PackedValue :: tfloat()) -> float().
 unpack_single(Unpacker, PackedValue) ->
     #tightfloats{minimum = {MinV_Exponent, _MinV_Significand},
                  exponent_bitsize = ExponentBitsize,
@@ -153,7 +159,7 @@ unpack_single(Unpacker, PackedValue) ->
                negative -> 1
            end,
     Exponent = SerialisedExponent + MinV_Exponent,
-    Significand = SerialisedSignificand bsl (?SIGNIFICAND_BITSIZE - SignificandBitSize),
+    Significand = SerialisedSignificand bsl (?IEEE754_DBL_SIGNIF_BS - SignificandBitSize),
     assemble_ieee754_double(Sign, Exponent, Significand).
 
 -spec sign_info(MinValue :: number(), MaxValue :: number()) -> sign_info().
@@ -164,18 +170,19 @@ sign_info(MinValue, MaxValue) when MinValue < 0, MaxValue < 0 ->
 sign_info(MinValue, MaxValue) when MinValue > 0, MaxValue > 0 ->
     positive.
 
--spec sign_bitsize(SignInfo :: sign_info()) -> boolean().
+-spec sign_bitsize(SignInfo :: sign_info()) -> 0 | 1.
 sign_bitsize(network)   -> 1;
 sign_bitsize(_SignInfo) -> 0.
 
--spec significand_bitsize(error_margin()) -> 1..?SIGNIFICAND_BITSIZE.
+-spec significand_bitsize(error_margin()) -> 1..?IEEE754_DBL_SIGNIF_BS.
 significand_bitsize(ErrorMargin) when ErrorMargin >= 0, ErrorMargin < 1 ->
-    MarginValue = (1 bsl ?EXPONENT_BITSIZE) * ErrorMargin,
+    MarginValue = (1 bsl ?IEEE754_DBL_EXPON_BS) * ErrorMargin,
     MarginBitsize = trunc(math:log(MarginValue) / math:log(2)),
-    ?EXPONENT_BITSIZE - MarginBitsize.
+    ?IEEE754_DBL_EXPON_BS - MarginBitsize.
 
--spec serialised_bitsize(sign_info(), ExponentBitsize :: non_neg_integer(),
-                         SignificandBitSize :: pos_integer()) -> pos_integer().
+-spec serialised_bitsize(sign_info(),
+                         ExponentBitsize :: 1..?IEEE754_DBL_EXPON_BS,
+                         SignificandBitSize :: 1..?IEEE754_DBL_SIGNIF_BS) -> pos_integer().
 serialised_bitsize(network, ExponentBitsize, SignificandBitSize) ->
     1 + ExponentBitsize + SignificandBitSize;
 serialised_bitsize(_, ExponentBitsize, SignificandBitSize) ->
@@ -183,25 +190,25 @@ serialised_bitsize(_, ExponentBitsize, SignificandBitSize) ->
 
 -spec disassemble_ieee754_double(Value :: number()) -> {sign(), exponent(), significand()}.
 disassemble_ieee754_double(Value) ->
-    <<Sign:?SIGN_BITSIZE, Exponent:?EXPONENT_BITSIZE,
-      Significand:?SIGNIFICAND_BITSIZE>> = <<Value/float>>,
+    <<Sign:?IEEE754_DBL_SIGN_BS, Exponent:?IEEE754_DBL_EXPON_BS,
+      Significand:?IEEE754_DBL_SIGNIF_BS>> = <<Value/float>>,
     {Sign, Exponent, Significand}.
 
 -spec assemble_ieee754_double(sign(), exponent(), significand()) -> float().
 assemble_ieee754_double(Sign, Exponent, Significand) ->
-    <<Value/float>> = <<Sign:?SIGN_BITSIZE, Exponent:?EXPONENT_BITSIZE,
-                        Significand:?SIGNIFICAND_BITSIZE>>,
+    <<Value/float>> = <<Sign:?IEEE754_DBL_SIGN_BS, Exponent:?IEEE754_DBL_EXPON_BS,
+                        Significand:?IEEE754_DBL_SIGNIF_BS>>,
     Value.
 
 -spec minimum_bits_for(number()) -> non_neg_integer().
 minimum_bits_for(V) ->
     ceil(math:log(V) / math:log(2)).
 
--spec floor(number()) -> integer().
+-spec floor(float()) -> integer().
 floor(V) when V < 0 ->
     trunc(V) - 1;
 floor(V) ->
     trunc(V).
 
--spec ceil(number()) -> integer().
+-spec ceil(float()) -> integer().
 ceil(V) -> floor(V) + 1.
