@@ -1,0 +1,12 @@
+{application, tightfloats,
+ [
+  {description, "Network-friendly floating-point serialisation"},
+  {vsn, git},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  %{mod, { erlfloatpack_app, []}},
+  {env, []}
+ ]}.
