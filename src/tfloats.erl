@@ -1,5 +1,5 @@
 -module(tfloats).
--author('Guilherme Andrade <erlzquad(at)gandrade(dot)net>').
+-author('Guilherme Andrade <tightfloats(at)gandrade(dot)net>').
 
 -ifdef(COMPILE_NATIVE_TIGHTFLOATS).
 % LOLSPEED ™
@@ -91,7 +91,7 @@ unpack(Unpacker, PackedValues) ->
 
 -spec new_tightfloats(MinValue :: number(), MaxValue :: number(), ErrorMargin :: error_margin())
         -> packer().
-new_tightfloats(MinValue, MaxValue, ErrorMargin) when MaxValue > MinValue, ErrorMargin >= 0, ErrorMargin < 1, MinValue /= 0, MaxValue /= 0 ->
+new_tightfloats(MinValue, MaxValue, ErrorMargin) when MaxValue > MinValue, MinValue /= 0, MaxValue /= 0 ->
     {_MinV_Sign, MinV_Exponent, MinV_Significand} = disassemble_ieee754_double(MinValue),
     {_MaxV_Sign, MaxV_Exponent, MaxV_Significand} = disassemble_ieee754_double(MaxValue),
     SignInfo = sign_info(MinValue, MaxValue),
@@ -175,10 +175,12 @@ sign_bitsize(network)   -> 1;
 sign_bitsize(_SignInfo) -> 0.
 
 -spec significand_bitsize(error_margin()) -> 1..?IEEE754_DBL_SIGNIF_BS.
+significand_bitsize(ErrorMargin) when ErrorMargin == 0 ->
+    ?IEEE754_DBL_SIGNIF_BS;
 significand_bitsize(ErrorMargin) when ErrorMargin >= 0, ErrorMargin < 1 ->
-    MarginValue = (1 bsl ?IEEE754_DBL_EXPON_BS) * ErrorMargin,
+    MarginValue = (1 bsl ?IEEE754_DBL_SIGNIF_BS) * ErrorMargin,
     MarginBitsize = trunc(math:log(MarginValue) / math:log(2)),
-    ?IEEE754_DBL_EXPON_BS - MarginBitsize.
+    max(1, min(?IEEE754_DBL_SIGNIF_BS, ?IEEE754_DBL_SIGNIF_BS - MarginBitsize)).
 
 -spec serialised_bitsize(sign_info(),
                          ExponentBitsize :: 1..?IEEE754_DBL_EXPON_BS,

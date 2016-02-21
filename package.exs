@@ -6,7 +6,7 @@ defmodule tightfloats.Mixfile do
   def project do
     [app: :tightfloats,
      version: @version,
-     description: "Network-friendly IEE754 floating-point serialisation"",
+     description: "Bandwidth-friendly IEEE 754 floating-point serialisation"",
      package: package]
   end
 
