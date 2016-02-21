@@ -71,5 +71,5 @@ Define 'COMPILE_NATIVE_TIGHTFLOATS' (e.g. "rebar compile -DCOMPILE_NATIVE_TIGHTF
 
 
 <table width="100%" border="0" summary="list of modules">
-<tr><td><a href="https://github.com/g-andrade/tightfloats/blob/master/doc/tfloats.md" class="module">tfloats</a></td></tr></table>
+<tr><td><a href="https://github.com/g-andrade/tight-floats/blob/master/doc/tfloats.md" class="module">tfloats</a></td></tr></table>
 
