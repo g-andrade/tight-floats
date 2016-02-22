@@ -60,6 +60,7 @@ It chops up the original values into sign, exponent and significand parts and, b
 
 * Deal less ambiguously with mixed ranges (e.g. negative minimum value and positive maximum value.)
 * Padding for easier use.
+* Deal with endianness?
 
 
 ### <a name="Concerning_native_compilation_(HiPE)">Concerning native compilation (HiPE)</a> ###
