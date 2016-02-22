@@ -20,7 +20,7 @@ __Authors:__ Guilherme Andrade ([`tightfloats(at)gandrade(dot)net`](mailto:tight
 * `MinValue`, `MaxValue`: the range of the values (bigger range => more bits)
 * `ErrorMargin`: a value, between 0 and 1, specifying how big do we want the error margin to be (bigger error margins => less bits)
 
-It can easily achieve up to **80%** compression ratios with a 1% error margin and a range encompassing 6 orders of magnitude, when comparing to regular 8-byte values.
+It can achieve a **compression ratio of 5** when a 1% error margin and a range encompassing 6 orders of magnitude are specified.
 
 
 ### <a name="Show_me">Show me</a> ###
